@@ -3,52 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alpha Sentinel - Persistent v8.0</title>
+    <title>Agentic Sentinel v8.8</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         :root {
-            --bg: #05070a; --card-bg: #0f121a; --header-bg: rgba(5, 7, 10, 0.9);
+            --bg: #05070a; --card-bg: #0f121a; --header-bg: rgba(5, 7, 10, 0.95);
             --accent-blue: #00d2ff; --accent-green: #00ff88; --accent-gold: #ffcc00;
             --accent-red: #ff3e3e; --text-main: #e0e6ed; --text-dim: #94a3b8;
             --border: #1e293b; --table-head: #161b22;
         }
-        body { background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; padding-bottom: 30px; }
-        .header-nav { position: sticky; top: 0; z-index: 100; background: var(--header-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .mode-badge { background: rgba(0, 210, 255, 0.1); color: var(--accent-blue); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid var(--accent-blue); }
+        body { background: var(--bg); color: var(--text-main); font-family: 'Inter', system-ui; margin: 0; padding-bottom: 20px; }
+        .header-nav { position: sticky; top: 0; z-index: 100; background: var(--header-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 15px; }
+        .nav-flex { display: flex; justify-content: space-between; align-items: center; }
+        .filter-box { display: flex; align-items: center; gap: 8px; background: var(--table-head); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); }
+        .filter-box input { background: transparent; border: none; color: var(--accent-green); width: 45px; outline: none; font-weight: bold; font-family: monospace; font-size: 0.9rem; }
+        
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 15px; padding: 15px; }
-        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; position: relative; animation: fadeIn 0.3s ease; }
-        .burn-value-display { background: var(--table-head); border-radius: 8px; padding: 12px; text-align: center; margin: 12px 0; }
-        .usd-amount { font-size: 2rem; font-weight: 900; font-family: 'Consolas', monospace; color: var(--accent-green); }
-        .stats-table { width: 100%; border-collapse: collapse; background: var(--card-bg); margin-top: 10px; }
-        .stats-table th { background: var(--table-head); padding: 12px; text-align: left; font-size: 0.75rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
-        .stats-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-        .btn-clear { background: #ff3e3e22; color: #ff3e3e; border: 1px solid #ff3e3e; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; }
-        .hidden { display: none; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 18px; border: 1px solid var(--border); transition: 0.3s; position: relative; }
+        .tag { font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .tag-blue { background: rgba(0, 210, 255, 0.1); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+        .tag-gold { background: rgba(255, 204, 0, 0.1); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
+        
+        .burn-value-box { background: var(--table-head); border-radius: 8px; padding: 15px; text-align: center; margin: 12px 0; border: 1px solid var(--border); }
+        .usd-val { font-size: 2.2rem; font-weight: 900; font-family: 'Consolas', monospace; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .stats-table th { text-align: left; padding: 12px; color: var(--text-dim); background: var(--table-head); }
+        .stats-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-
     <nav class="header-nav">
-        <div>
-            <h1 style="margin:0; font-size:1rem; color:var(--accent-blue);">ALPHA SENTINEL</h1>
-            <div style="margin-top:4px;"><span class="mode-badge">🎯 持久化监控模式</span></div>
+        <div class="nav-flex">
+            <h1 style="margin:0; font-size:1.1rem; color:var(--accent-blue); letter-spacing:1px;">ALPHA SENTINEL</h1>
+            <div class="filter-box">
+                <span style="font-size:0.6rem; color:var(--text-dim);">MIN $</span>
+                <input type="number" id="minUsd" value="100" oninput="saveSettings()">
+            </div>
         </div>
-        <button class="btn-clear" onclick="clearDatabase()">清空本地数据</button>
     </nav>
 
-    <div style="padding: 15px 20px 0; display: flex; gap: 20px; border-bottom: 1px solid var(--border);">
-        <button id="tabLive" onclick="switchTab('live')" style="background:none; border:none; color:var(--accent-blue); font-weight:bold; cursor:pointer; padding:10px 5px; border-bottom:2px solid var(--accent-blue);">实时监控</button>
-        <button id="tabStats" onclick="switchTab('stats')" style="background:none; border:none; color:var(--text-dim); font-weight:bold; cursor:pointer; padding:10px 5px;">通缩排行</button>
+    <div style="padding: 10px 15px 0; display: flex; gap: 20px;">
+        <button id="btnLive" onclick="switchTab('live')" style="background:none; border:none; color:var(--accent-blue); font-weight:bold; cursor:pointer; padding:10px; border-bottom:2px solid var(--accent-blue);">实时流</button>
+        <button id="btnStats" onclick="switchTab('stats')" style="background:none; border:none; color:var(--text-dim); font-weight:bold; cursor:pointer; padding:10px;">排行榜</button>
+        <button onclick="clearData()" style="margin-left:auto; background:none; border:none; color:var(--accent-red); font-size:0.7rem; cursor:pointer;">清空数据</button>
     </div>
 
     <div id="liveView"><div id="grid" class="grid"></div></div>
-    
     <div id="statsView" class="hidden" style="padding:15px; overflow-x: auto;">
         <table class="stats-table">
-            <thead>
-                <tr><th>代币</th><th>回购次数</th><th>总价值(USD)</th><th>通缩指数</th></tr>
-            </thead>
+            <thead><tr><th>代币</th><th>次数</th><th>总USD</th><th>通缩指数</th></tr></thead>
             <tbody id="statsBody"></tbody>
         </table>
     </div>
@@ -58,47 +62,36 @@
         let allEvents = [];
         let tokenCache = {};
 
-        // --- 本地存储逻辑 ---
-        function saveToLocal() {
-            try {
-                // 仅保留最近1000条，防止本地存储溢出
-                const dataToSave = allEvents.slice(-1000);
-                localStorage.setItem('alpha_sentinel_data', JSON.stringify(dataToSave));
-            } catch (e) { console.error("本地存储失败", e); }
+        // --- 本地持久化 ---
+        function saveSettings() {
+            localStorage.setItem('min_usd', document.getElementById('minUsd').value);
+            applyFilter();
         }
 
-        function loadFromLocal() {
-            const saved = localStorage.getItem('alpha_sentinel_data');
-            if (saved) {
-                allEvents = JSON.parse(saved);
-                console.log(`已从本地恢复 ${allEvents.length} 条数据`);
-                // 恢复后立即渲染一次，特别是如果是刚开网页
-                allEvents.forEach(e => {
-                    if (e.usd >= 100) renderCard(e, false); // false 表示不置顶，按顺序排
-                });
-                renderStats();
-            }
+        function saveEvents() {
+            localStorage.setItem('burn_events_v8', JSON.stringify(allEvents.slice(-1000)));
         }
 
-        function clearDatabase() {
-            if (confirm("确定要清空所有本地历史数据和排行榜吗？")) {
-                localStorage.removeItem('alpha_sentinel_data');
-                allEvents = [];
-                document.getElementById('grid').innerHTML = '';
-                renderStats();
-            }
+        function clearData() {
+            if(confirm("确定清空吗？")) { localStorage.clear(); location.reload(); }
         }
 
-        // --- 核心逻辑 ---
-        function switchTab(mode) {
-            const isL = mode === 'live';
-            document.getElementById('liveView').classList.toggle('hidden', !isL);
-            document.getElementById('statsView').classList.toggle('hidden', isL);
-            document.getElementById('tabLive').style.color = isL ? 'var(--accent-blue)' : 'var(--text-dim)';
-            document.getElementById('tabLive').style.borderBottom = isL ? '2px solid var(--accent-blue)' : 'none';
-            document.getElementById('tabStats').style.color = !isL ? 'var(--accent-blue)' : 'var(--text-dim)';
-            document.getElementById('tabStats').style.borderBottom = !isL ? '2px solid var(--accent-blue)' : 'none';
-            if(!isL) renderStats();
+        function applyFilter() {
+            const min = parseFloat(document.getElementById('minUsd').value) || 0;
+            document.querySelectorAll('.card').forEach(c => {
+                c.classList.toggle('hidden', parseFloat(c.dataset.usd) < min);
+            });
+        }
+
+        function switchTab(t) {
+            const isLive = t === 'live';
+            document.getElementById('liveView').classList.toggle('hidden', !isLive);
+            document.getElementById('statsView').classList.toggle('hidden', isLive);
+            document.getElementById('btnLive').style.color = isLive ? 'var(--accent-blue)' : 'var(--text-dim)';
+            document.getElementById('btnLive').style.borderBottom = isLive ? '2px solid var(--accent-blue)' : 'none';
+            document.getElementById('btnStats').style.color = !isLive ? 'var(--accent-blue)' : 'var(--text-dim)';
+            document.getElementById('btnStats').style.borderBottom = !isLive ? '2px solid var(--accent-blue)' : 'none';
+            if(!isLive) renderStats();
         }
 
         async function getDex(addr) {
@@ -116,85 +109,84 @@
             } catch { return { symbol: 'N/A', fdv: 0, price: 0 }; }
         }
 
-        function renderCard(data, isNew = true) {
-            if (document.getElementById(data.tx)) return; // 彻底排重
-
+        function renderCard(e, isNew = true) {
+            if(document.getElementById(e.tx)) return;
+            const usd = parseFloat(e.usd) || 0;
             const card = document.createElement('div');
             card.className = 'card';
-            card.id = data.tx;
+            card.id = e.tx;
+            card.dataset.usd = usd;
+
+            // 核心修复：184U 属于 Verified 且带蓝边
+            let tag = '';
+            if (usd >= 500) {
+                tag = '<span class="tag tag-gold">🔥 WHALE ACTION</span>';
+                card.style.borderColor = 'var(--accent-gold)';
+            } else if (usd >= 100) {
+                tag = '<span class="tag tag-blue">✅ VERIFIED BURN</span>';
+                card.style.borderColor = 'var(--accent-blue)';
+            } else {
+                tag = '<span class="tag" style="background:#222; color:#666;">Low Impact</span>';
+            }
+
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div>
-                        <b style="font-size:1.1rem; color:var(--accent-blue);">${data.symbol}</b>
-                        <div style="font-size:0.7rem; color:var(--text-dim);">市值: $${data.fdv.toLocaleString()}</div>
-                    </div>
-                    <span style="font-size:0.65rem; color:var(--text-dim);">${data.time}</span>
+                    <div><b style="font-size:1.1rem; color:var(--accent-blue);">${e.symbol}</b><br><small style="color:var(--text-dim);">市值: $${e.fdv.toLocaleString()}</small></div>
+                    <span style="font-size:0.65rem; color:var(--text-dim);">${e.time}</span>
                 </div>
-                <div class="burn-value-display">
-                    <div class="usd-amount">$${data.usd.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+                <div class="burn-value-box">
+                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px;">EST. VALUE (USD)</div>
+                    <div class="usd-val" style="color:${usd >= 100 ? 'var(--accent-green)' : '#fff'}">$${usd.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
-                    <span style="color:var(--accent-gold); font-weight:bold;">${data.usd > 500 ? '🔥 WHALE' : '✅ VERIFIED'}</span>
-                    <span>IMPACT: <span style="color:var(--accent-red);">${data.impact}%</span></span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    ${tag}
+                    <div style="font-size:0.75rem; color:var(--text-dim);">Impact: <span style="color:${e.impact > 1 ? 'var(--accent-red)' : 'var(--accent-green)'}">${e.impact}%</span></div>
                 </div>
-                <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:8px; text-align:right;">
-                    <a href="https://basescan.org/tx/${data.tx}" target="_blank" style="color:var(--accent-dim); text-decoration:none; font-size:0.7rem;">查看哈希 →</a>
+                <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border); text-align:right;">
+                    <a href="https://basescan.org/tx/${e.tx}" target="_blank" style="color:var(--text-dim); text-decoration:none; font-size:0.7rem;">VIEW ON CHAIN ↗</a>
                 </div>
             `;
-            const grid = document.getElementById('grid');
-            if (isNew) grid.insertBefore(card, grid.firstChild);
-            else grid.appendChild(card);
+            const g = document.getElementById('grid');
+            if(isNew) g.insertBefore(card, g.firstChild); else g.appendChild(card);
         }
 
         socket.on('new_burn_event', async (data) => {
-            // 先排重，避免重复计算
-            if (allEvents.some(e => e.tx === data.tx)) return;
-
+            if(allEvents.some(x => x.tx === data.tx)) return;
             const dex = await getDex(data.token);
             const qty = parseFloat(data.amount.replace(/,/g, ''));
             let usd = qty * (dex.price || 0);
-            
-            // 链上兜底逻辑
             if(usd === 0 && data.weth_reserve > 0) {
                 usd = qty * (data.weth_reserve / parseFloat(data.reserve.replace(/,/g, ''))) * 2650;
             }
-
-            const eventData = {...data, ...dex, usd, qty};
-            allEvents.push(eventData);
-            
-            // 存入本地存储
-            saveToLocal();
-
-            // 仅展示 > 100 的卡片
-            if (usd >= 100) {
-                renderCard(eventData, true);
-            }
-            
-            // 实时更新一次排行榜
-            if (document.getElementById('statsView').className === '') renderStats();
+            const fullData = {...data, ...dex, usd, qty};
+            allEvents.push(fullData);
+            saveEvents();
+            renderCard(fullData, true);
+            applyFilter();
         });
 
         function renderStats() {
             const s = {};
             allEvents.forEach(e => {
                 if(!s[e.token]) s[e.token] = { sym: e.symbol, count: 0, total: 0, fdv: e.fdv };
-                s[e.token].count++;
-                s[e.token].total += e.usd;
+                s[e.token].count++; s[e.token].total += e.usd;
             });
             const sorted = Object.entries(s).sort((a,b) => b[1].total - a[1].total);
-            document.getElementById('statsBody').innerHTML = sorted.map(([addr, d]) => {
-                const intensity = d.fdv > 0 ? ((d.total / d.fdv) * 100).toFixed(4) : "0.0000";
-                return `<tr>
-                    <td><b>${d.sym}</b></td>
-                    <td>${d.count}</td>
-                    <td style="color:var(--accent-green); font-weight:bold;">$${d.total.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
-                    <td style="color:var(--accent-gold);">${intensity}</td>
-                </tr>`
-            }).join('');
+            document.getElementById('statsBody').innerHTML = sorted.map(([addr, d]) => `
+                <tr><td><b>${d.sym}</b></td><td>${d.count}</td><td style="color:var(--accent-green); font-weight:bold;">$${d.total.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td>${d.fdv > 0 ? ((d.total / d.fdv) * 100).toFixed(4) : "0.0000"}</td></tr>
+            `).join('');
         }
 
-        // 页面加载时执行
-        window.onload = loadFromLocal;
+        window.onload = () => {
+            const m = localStorage.getItem('min_usd');
+            if(m) document.getElementById('minUsd').value = m;
+            const e = localStorage.getItem('burn_events_v8');
+            if(e) { 
+                allEvents = JSON.parse(e); 
+                allEvents.forEach(x => renderCard(x, false)); 
+                applyFilter();
+            }
+        };
     </script>
 </body>
 </html>
