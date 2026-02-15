@@ -1,0 +1,4 @@
+flask
+flask-socketio
+web3
+eventlet
