@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Agentic Sentinel v8.8</title>
+    <title>Alpha Sentinel - Persistent v9.0</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         :root {
@@ -12,47 +12,55 @@
             --accent-red: #ff3e3e; --text-main: #e0e6ed; --text-dim: #94a3b8;
             --border: #1e293b; --table-head: #161b22;
         }
-        body { background: var(--bg); color: var(--text-main); font-family: 'Inter', system-ui; margin: 0; padding-bottom: 20px; }
+        body { background: var(--bg); color: var(--text-main); font-family: 'Inter', system-ui, sans-serif; margin: 0; padding-bottom: 20px; }
+        
         .header-nav { position: sticky; top: 0; z-index: 100; background: var(--header-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 15px; }
         .nav-flex { display: flex; justify-content: space-between; align-items: center; }
-        .filter-box { display: flex; align-items: center; gap: 8px; background: var(--table-head); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .filter-box input { background: transparent; border: none; color: var(--accent-green); width: 45px; outline: none; font-weight: bold; font-family: monospace; font-size: 0.9rem; }
+        
+        .filter-box { display: flex; align-items: center; gap: 8px; background: var(--table-head); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .filter-box input { background: transparent; border: none; color: var(--accent-green); width: 50px; outline: none; font-weight: bold; font-family: monospace; font-size: 1rem; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 15px; padding: 15px; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 18px; border: 1px solid var(--border); transition: 0.3s; position: relative; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 18px; border: 1px solid var(--border); transition: 0.3s; position: relative; animation: fadeIn 0.3s ease; }
+        
         .tag { font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
         .tag-blue { background: rgba(0, 210, 255, 0.1); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
         .tag-gold { background: rgba(255, 204, 0, 0.1); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
         
         .burn-value-box { background: var(--table-head); border-radius: 8px; padding: 15px; text-align: center; margin: 12px 0; border: 1px solid var(--border); }
         .usd-val { font-size: 2.2rem; font-weight: 900; font-family: 'Consolas', monospace; }
+        
         .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .stats-table th { text-align: left; padding: 12px; color: var(--text-dim); background: var(--table-head); }
         .stats-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+        
         .hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
     <nav class="header-nav">
         <div class="nav-flex">
-            <h1 style="margin:0; font-size:1.1rem; color:var(--accent-blue); letter-spacing:1px;">ALPHA SENTINEL</h1>
+            <h1 style="margin:0; font-size:1.1rem; color:var(--accent-blue); letter-spacing:1px;">SENTINEL V9</h1>
             <div class="filter-box">
-                <span style="font-size:0.6rem; color:var(--text-dim);">MIN $</span>
+                <span style="font-size:0.6rem; color:var(--text-dim);">MIN USD $</span>
                 <input type="number" id="minUsd" value="100" oninput="saveSettings()">
             </div>
         </div>
     </nav>
 
-    <div style="padding: 10px 15px 0; display: flex; gap: 20px;">
-        <button id="btnLive" onclick="switchTab('live')" style="background:none; border:none; color:var(--accent-blue); font-weight:bold; cursor:pointer; padding:10px; border-bottom:2px solid var(--accent-blue);">实时流</button>
+    <div style="padding: 10px 15px 0; display: flex; gap: 20px; align-items: center;">
+        <button id="btnLive" onclick="switchTab('live')" style="background:none; border:none; color:var(--accent-blue); font-weight:bold; cursor:pointer; padding:10px; border-bottom:2px solid var(--accent-blue);">实时监控</button>
         <button id="btnStats" onclick="switchTab('stats')" style="background:none; border:none; color:var(--text-dim); font-weight:bold; cursor:pointer; padding:10px;">排行榜</button>
-        <button onclick="clearData()" style="margin-left:auto; background:none; border:none; color:var(--accent-red); font-size:0.7rem; cursor:pointer;">清空数据</button>
+        <span id="connStatus" style="font-size:0.6rem; color:#555; margin-left:auto;">等待连接...</span>
+        <button onclick="clearData()" style="background:none; border:none; color:var(--accent-red); font-size:0.7rem; cursor:pointer; padding:10px;">清空</button>
     </div>
 
     <div id="liveView"><div id="grid" class="grid"></div></div>
+    
     <div id="statsView" class="hidden" style="padding:15px; overflow-x: auto;">
         <table class="stats-table">
-            <thead><tr><th>代币</th><th>次数</th><th>总USD</th><th>通缩指数</th></tr></thead>
+            <thead><tr><th>代币</th><th>次数</th><th>累计USD</th><th>通缩指数</th></tr></thead>
             <tbody id="statsBody"></tbody>
         </table>
     </div>
@@ -62,24 +70,50 @@
         let allEvents = [];
         let tokenCache = {};
 
-        // --- 本地持久化 ---
+        // --- 核心：页面加载逻辑 ---
+        window.onload = function() {
+            // 1. 加载配置
+            const savedMin = localStorage.getItem('min_usd_v9');
+            if(savedMin) document.getElementById('minUsd').value = savedMin;
+
+            // 2. 强行先渲染本地数据
+            const savedEvents = localStorage.getItem('burn_events_v9');
+            if(savedEvents) {
+                allEvents = JSON.parse(savedEvents);
+                console.log("从缓存恢复数据量:", allEvents.length);
+                // 按时间顺序渲染老数据（不置顶）
+                allEvents.forEach(e => renderCard(e, false));
+                applyFilter();
+                renderStats();
+            }
+        };
+
+        // --- 数据持久化 ---
         function saveSettings() {
-            localStorage.setItem('min_usd', document.getElementById('minUsd').value);
+            localStorage.setItem('min_usd_v9', document.getElementById('minUsd').value);
             applyFilter();
         }
 
         function saveEvents() {
-            localStorage.setItem('burn_events_v8', JSON.stringify(allEvents.slice(-1000)));
+            // 只保留最近 1000 条，确保手机浏览器不卡顿
+            localStorage.setItem('burn_events_v9', JSON.stringify(allEvents.slice(-1000)));
         }
 
         function clearData() {
-            if(confirm("确定清空吗？")) { localStorage.clear(); location.reload(); }
+            if(confirm("确定清空所有本地历史数据吗？")) {
+                localStorage.clear();
+                allEvents = [];
+                document.getElementById('grid').innerHTML = '';
+                renderStats();
+                location.reload();
+            }
         }
 
         function applyFilter() {
             const min = parseFloat(document.getElementById('minUsd').value) || 0;
             document.querySelectorAll('.card').forEach(c => {
-                c.classList.toggle('hidden', parseFloat(c.dataset.usd) < min);
+                const val = parseFloat(c.dataset.usd);
+                c.classList.toggle('hidden', val < min);
             });
         }
 
@@ -110,14 +144,14 @@
         }
 
         function renderCard(e, isNew = true) {
-            if(document.getElementById(e.tx)) return;
+            if(document.getElementById(e.tx)) return; // 严格排重
+
             const usd = parseFloat(e.usd) || 0;
             const card = document.createElement('div');
             card.className = 'card';
             card.id = e.tx;
             card.dataset.usd = usd;
 
-            // 核心修复：184U 属于 Verified 且带蓝边
             let tag = '';
             if (usd >= 500) {
                 tag = '<span class="tag tag-gold">🔥 WHALE ACTION</span>';
@@ -135,7 +169,6 @@
                     <span style="font-size:0.65rem; color:var(--text-dim);">${e.time}</span>
                 </div>
                 <div class="burn-value-box">
-                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px;">EST. VALUE (USD)</div>
                     <div class="usd-val" style="color:${usd >= 100 ? 'var(--accent-green)' : '#fff'}">$${usd.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -143,25 +176,37 @@
                     <div style="font-size:0.75rem; color:var(--text-dim);">Impact: <span style="color:${e.impact > 1 ? 'var(--accent-red)' : 'var(--accent-green)'}">${e.impact}%</span></div>
                 </div>
                 <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border); text-align:right;">
-                    <a href="https://basescan.org/tx/${e.tx}" target="_blank" style="color:var(--text-dim); text-decoration:none; font-size:0.7rem;">VIEW ON CHAIN ↗</a>
+                    <a href="https://basescan.org/tx/${e.tx}" target="_blank" style="color:var(--text-dim); text-decoration:none; font-size:0.7rem;">HASH ↗</a>
                 </div>
             `;
             const g = document.getElementById('grid');
-            if(isNew) g.insertBefore(card, g.firstChild); else g.appendChild(card);
+            if(isNew) g.insertBefore(card, g.firstChild); // 新来的放最上面
+            else g.appendChild(card); // 恢复老数据放后面
         }
 
+        // --- Socket 接收与排重 ---
+        socket.on('connect', () => {
+            document.getElementById('connStatus').innerText = "● 已连接";
+            document.getElementById('connStatus').style.color = "var(--accent-green)";
+        });
+
         socket.on('new_burn_event', async (data) => {
+            // 关键：如果本地已经有了（比如刚才存过的），直接无视补发的数据
             if(allEvents.some(x => x.tx === data.tx)) return;
+
             const dex = await getDex(data.token);
             const qty = parseFloat(data.amount.replace(/,/g, ''));
             let usd = qty * (dex.price || 0);
+            
             if(usd === 0 && data.weth_reserve > 0) {
                 usd = qty * (data.weth_reserve / parseFloat(data.reserve.replace(/,/g, ''))) * 2650;
             }
+
             const fullData = {...data, ...dex, usd, qty};
             allEvents.push(fullData);
             saveEvents();
-            renderCard(fullData, true);
+            
+            renderCard(fullData, true); // 实时推送，插入顶部
             applyFilter();
         });
 
@@ -173,20 +218,9 @@
             });
             const sorted = Object.entries(s).sort((a,b) => b[1].total - a[1].total);
             document.getElementById('statsBody').innerHTML = sorted.map(([addr, d]) => `
-                <tr><td><b>${d.sym}</b></td><td>${d.count}</td><td style="color:var(--accent-green); font-weight:bold;">$${d.total.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td>${d.fdv > 0 ? ((d.total / d.fdv) * 100).toFixed(4) : "0.0000"}</td></tr>
+                <tr><td><b>${d.sym}</b></td><td>${d.count}</td><td style="color:var(--accent-green); font-weight:bold;">$${d.total.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td>${d.fdv > 0 ? ((d.total / d.fdv) * 100).toFixed(4) : "0.000"}</td></tr>
             `).join('');
         }
-
-        window.onload = () => {
-            const m = localStorage.getItem('min_usd');
-            if(m) document.getElementById('minUsd').value = m;
-            const e = localStorage.getItem('burn_events_v8');
-            if(e) { 
-                allEvents = JSON.parse(e); 
-                allEvents.forEach(x => renderCard(x, false)); 
-                applyFilter();
-            }
-        };
     </script>
 </body>
 </html>
