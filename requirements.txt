@@ -3,3 +3,4 @@ flask-socketio
 web3
 eventlet
 gunicorn
+psycopg2-binary  # 新增：PostgreSQL 驱动
